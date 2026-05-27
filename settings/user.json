@@ -110,6 +110,16 @@
   },
 
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{USER_HOOKS}}/orient-session.js\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Read|Edit|Write|NotebookEdit|Bash|PowerShell",

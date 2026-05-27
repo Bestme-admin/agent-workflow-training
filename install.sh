@@ -122,9 +122,12 @@ if [[ $DO_USER == 1 ]]; then
   hdr "User scope (${USER_CLAUDE})"
 
   USER_HOOKS_DIR="${USER_CLAUDE}/hooks"
-  for h in deny-env-access.js deny-supabase-writes.js deny-supabase-migration.js; do
+  for h in deny-env-access.js deny-supabase-writes.js orient-session.js; do
     safe_copy_file "${SCRIPT_DIR}/hooks/${h}" "${USER_HOOKS_DIR}/${h}"
   done
+
+  # Reference doc that orient-session.js banner points to
+  safe_copy_file "${SCRIPT_DIR}/WHY-DENIED.md" "${USER_CLAUDE}/WHY-DENIED.md"
 
   # User-scope skills: everything under skills/user/
   if [[ -d "${SCRIPT_DIR}/skills/user" ]]; then
@@ -146,7 +149,7 @@ if [[ $DO_PROJECT == 1 ]]; then
   hdr "Project scope (${PROJECT_CLAUDE})"
 
   PROJ_HOOKS_DIR="${PROJECT_CLAUDE}/hooks"
-  for h in deny-env-access.js deny-supabase-writes.js deny-supabase-migration.js; do
+  for h in deny-env-access.js deny-supabase-writes.js; do
     safe_copy_file "${SCRIPT_DIR}/hooks/${h}" "${PROJ_HOOKS_DIR}/${h}"
   done
 

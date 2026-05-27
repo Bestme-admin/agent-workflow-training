@@ -29,6 +29,8 @@ You can't fix this with prompts. Prompts drift, get forgotten, and aren't enforc
 
 Anything not auto-denied still surfaces to you as an approval prompt — you stay in the loop on anything that isn't pre-vetted as safe.
 
+When a deny *does* fire, the user shouldn't have to guess why. Every session starts with a one-line banner pointing at [`WHY-DENIED.md`](WHY-DENIED.md) — a reference doc with the rationale and workaround for each pattern. First time a teammate sees `Tool use denied by permissions.deny pattern: Bash(cat .env*)`, they already know where to look.
+
 The `ai-workflow` skill is the human-readable counterpart: when the agent reads it (one-line `CLAUDE.md` reference triggers it), it knows the team's iteration discipline — investigate before acting, plan before implementing, ask before doing anything irreversible.
 
 ### What's in the box
@@ -37,6 +39,7 @@ The `ai-workflow` skill is the human-readable counterpart: when the agent reads 
 agent-workflow-training/
 ├── README.md                   you are here
 ├── LICENSE                     MIT
+├── WHY-DENIED.md               reference doc shown to the user on first deny
 ├── install.sh                  macOS + Linux installer
 ├── install.ps1                 Windows installer (PowerShell 7+)
 │
@@ -45,6 +48,7 @@ agent-workflow-training/
 │   └── project.json            <project>/.claude/settings.json template
 │
 ├── hooks/                      cross-platform Node hooks
+│   ├── orient-session.js       SessionStart banner: tells the user WHY-DENIED.md exists
 │   ├── deny-env-access.js      block reads/writes/shell access to .env*
 │   └── deny-supabase-writes.js block ad-hoc mutating SQL via Supabase MCP execute_sql
 │
@@ -106,13 +110,15 @@ cd agent-workflow-training
 **What gets written:**
 
 User scope (`~/.claude/`):
+- `hooks/orient-session.js` — fires on every Claude Code session start, prints a one-line banner to the terminal pointing at `WHY-DENIED.md`
 - `hooks/deny-env-access.js`
 - `hooks/deny-supabase-writes.js`
+- `WHY-DENIED.md` — the reference doc the banner points to (this is the *first* place users go when they hit a deny they don't understand)
 - Everything under `skills/user/` → `~/.claude/skills/<skill-name>/SKILL.md` (currently: `ai-workflow`)
 - `settings.json` *(if missing — otherwise `settings.json.agent-workflow-training` sidecar)*
 
 Project scope (`<project>/.claude/`):
-- Same hooks (duplicated into the project so the protections travel with the repo)
+- `deny-env-access.js` + `deny-supabase-writes.js` (duplicated into the project so the protections travel with the repo)
 - Everything under `skills/project/` → `<project>/.claude/skills/<skill-name>/SKILL.md` (currently: `supabase-migration-merge`)
 - `settings.json` *(or sidecar if existing)*
 
@@ -231,6 +237,8 @@ MIT — see [LICENSE](LICENSE).
 
 Всё, что не запрещено автоматически, всё равно показывается вам как запрос на подтверждение — вы остаётесь в цикле для любого действия, которое заранее не разрешено как безопасное.
 
+Когда deny *срабатывает*, пользователю не нужно гадать, почему. Каждая сессия начинается с одной строки-баннера, указывающего на [`WHY-DENIED.md`](WHY-DENIED.md) — справочник с причиной и обходным путём для каждого шаблона. Когда коллега впервые увидит `Tool use denied by permissions.deny pattern: Bash(cat .env*)`, он уже знает, куда смотреть.
+
 Навык `ai-workflow` — это человеко-читаемая половина системы: когда агент его читает (одна строчка в `CLAUDE.md` запускает это), он знает командную дисциплину итераций — исследовать перед действием, планировать перед реализацией, спрашивать перед любым необратимым шагом.
 
 ### Что внутри
@@ -308,13 +316,15 @@ cd agent-workflow-training
 **Что записывается:**
 
 User-scope (`~/.claude/`):
+- `hooks/orient-session.js` — срабатывает при старте каждой сессии Claude Code, печатает в терминал одну строку-баннер, указывающую на `WHY-DENIED.md`
 - `hooks/deny-env-access.js`
 - `hooks/deny-supabase-writes.js`
+- `WHY-DENIED.md` — справочник, на который указывает баннер (это *первое* место, куда пользователь идёт, увидев непонятный deny)
 - Всё из `skills/user/` → `~/.claude/skills/<имя-навыка>/SKILL.md` (сейчас: `ai-workflow`)
 - `settings.json` *(если его нет — иначе sidecar `settings.json.agent-workflow-training`)*
 
 Project-scope (`<project>/.claude/`):
-- Те же хуки (дублируются в проект, чтобы защиты путешествовали вместе с репо)
+- `deny-env-access.js` + `deny-supabase-writes.js` (дублируются в проект, чтобы защиты путешествовали вместе с репо)
 - Всё из `skills/project/` → `<project>/.claude/skills/<имя-навыка>/SKILL.md` (сейчас: `supabase-migration-merge`)
 - `settings.json` *(или sidecar, если уже существует)*
 

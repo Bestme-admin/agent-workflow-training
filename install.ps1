@@ -115,9 +115,14 @@ if ($doUser) {
     Hdr "User scope ($userClaude)"
 
     $userHooksDir = Join-Path $userClaude 'hooks'
-    foreach ($h in @('deny-env-access.js', 'deny-supabase-writes.js', 'deny-supabase-migration.js')) {
+    foreach ($h in @('deny-env-access.js', 'deny-supabase-writes.js', 'orient-session.js')) {
         Copy-SafeFile -Src (Join-Path $scriptDir "hooks\$h") -Dst (Join-Path $userHooksDir $h)
     }
+
+    # Reference doc that orient-session.js banner points to
+    Copy-SafeFile `
+        -Src (Join-Path $scriptDir 'WHY-DENIED.md') `
+        -Dst (Join-Path $userClaude 'WHY-DENIED.md')
 
     # User-scope skills: everything under skills\user\
     $userSkillsRoot = Join-Path $scriptDir 'skills\user'
@@ -143,7 +148,7 @@ if ($doProject) {
     Hdr "Project scope ($projectClaude)"
 
     $projHooksDir = Join-Path $projectClaude 'hooks'
-    foreach ($h in @('deny-env-access.js', 'deny-supabase-writes.js', 'deny-supabase-migration.js')) {
+    foreach ($h in @('deny-env-access.js', 'deny-supabase-writes.js')) {
         Copy-SafeFile -Src (Join-Path $scriptDir "hooks\$h") -Dst (Join-Path $projHooksDir $h)
     }
 
