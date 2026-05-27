@@ -132,7 +132,7 @@ Add this block near the top of your project's `CLAUDE.md`:
 | Action | Status | Caught by |
 |---|---|---|
 | Read `.env`, `.env.local`, `.env.prod` | **Denied** | `permissions.deny` + `deny-env-access.js` |
-| `cat .env` / `Get-Content .env` in Bash | **Denied** | `deny-env-access.js` |
+| `cat / less / head / tail / source / cp / mv .env*` etc. in Bash, `Get-Content / gc / type / Copy-Item .env*` in PowerShell | **Denied** | `permissions.deny` (first line) + `deny-env-access.js` (catches edge cases) |
 | Read `.env.example` | Allowed | — |
 | Supabase MCP `SELECT * FROM ...` | Allowed | — |
 | Supabase MCP `execute_sql` with `INSERT/UPDATE/DELETE/DROP/...` | **Denied** | `deny-supabase-writes.js` |
@@ -334,7 +334,7 @@ Project-scope (`<project>/.claude/`):
 | Действие | Статус | Что ловит |
 |---|---|---|
 | Read `.env`, `.env.local`, `.env.prod` | **Запрещено** | `permissions.deny` + `deny-env-access.js` |
-| `cat .env` / `Get-Content .env` в Bash | **Запрещено** | `deny-env-access.js` |
+| `cat / less / head / tail / source / cp / mv .env*` и т. п. в Bash, `Get-Content / gc / type / Copy-Item .env*` в PowerShell | **Запрещено** | `permissions.deny` (первая линия) + `deny-env-access.js` (ловит крайние случаи) |
 | Read `.env.example` | Разрешено | — |
 | Supabase MCP `SELECT * FROM ...` | Разрешено | — |
 | Supabase MCP `execute_sql` с `INSERT/UPDATE/DELETE/DROP/...` | **Запрещено** | `deny-supabase-writes.js` |
