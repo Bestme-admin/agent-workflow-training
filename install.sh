@@ -126,8 +126,14 @@ if [[ $DO_USER == 1 ]]; then
     safe_copy_file "${SCRIPT_DIR}/hooks/${h}" "${USER_HOOKS_DIR}/${h}"
   done
 
-  USER_SKILLS_DIR="${USER_CLAUDE}/skills/ai-workflow"
-  safe_copy_file "${SCRIPT_DIR}/skills/ai-workflow/SKILL.md" "${USER_SKILLS_DIR}/SKILL.md"
+  # User-scope skills: everything under skills/user/
+  if [[ -d "${SCRIPT_DIR}/skills/user" ]]; then
+    for skill_dir in "${SCRIPT_DIR}/skills/user"/*/; do
+      [[ -d "$skill_dir" ]] || continue
+      skill_name=$(basename "$skill_dir")
+      safe_copy_file "${skill_dir}SKILL.md" "${USER_CLAUDE}/skills/${skill_name}/SKILL.md"
+    done
+  fi
 
   write_or_sidecar_settings \
     "${SCRIPT_DIR}/settings/user.json" \
@@ -144,6 +150,15 @@ if [[ $DO_PROJECT == 1 ]]; then
     safe_copy_file "${SCRIPT_DIR}/hooks/${h}" "${PROJ_HOOKS_DIR}/${h}"
   done
 
+  # Project-scope skills: everything under skills/project/ (installed by default)
+  if [[ -d "${SCRIPT_DIR}/skills/project" ]]; then
+    for skill_dir in "${SCRIPT_DIR}/skills/project"/*/; do
+      [[ -d "$skill_dir" ]] || continue
+      skill_name=$(basename "$skill_dir")
+      safe_copy_file "${skill_dir}SKILL.md" "${PROJECT_CLAUDE}/skills/${skill_name}/SKILL.md"
+    done
+  fi
+
   write_or_sidecar_settings \
     "${SCRIPT_DIR}/settings/project.json" \
     "${PROJECT_CLAUDE}/settings.json"
@@ -151,6 +166,7 @@ if [[ $DO_PROJECT == 1 ]]; then
   log ""
   log "NEXT: add this line to your project's CLAUDE.md so every session reads the workflow:"
   log "      > **Required reading:** the \`ai-workflow\` skill (installed at \`~/.claude/skills/ai-workflow/SKILL.md\`)."
+  log "      Project-scope skills (e.g. supabase-migration-merge) live at \`<project>/.claude/skills/\`."
 fi
 
 # -------- done --------

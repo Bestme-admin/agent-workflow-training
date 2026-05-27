@@ -119,10 +119,16 @@ if ($doUser) {
         Copy-SafeFile -Src (Join-Path $scriptDir "hooks\$h") -Dst (Join-Path $userHooksDir $h)
     }
 
-    $userSkillsDir = Join-Path $userClaude 'skills\ai-workflow'
-    Copy-SafeFile `
-        -Src (Join-Path $scriptDir 'skills\ai-workflow\SKILL.md') `
-        -Dst (Join-Path $userSkillsDir 'SKILL.md')
+    # User-scope skills: everything under skills\user\
+    $userSkillsRoot = Join-Path $scriptDir 'skills\user'
+    if (Test-Path $userSkillsRoot) {
+        foreach ($skillDir in Get-ChildItem -Directory -Path $userSkillsRoot) {
+            $skillName = $skillDir.Name
+            Copy-SafeFile `
+                -Src (Join-Path $skillDir.FullName 'SKILL.md') `
+                -Dst (Join-Path $userClaude "skills\$skillName\SKILL.md")
+        }
+    }
 
     # Forward-slash path in JSON for cross-shell consistency
     $userHooksForJson = $userHooksDir.Replace('\', '/')
@@ -141,6 +147,17 @@ if ($doProject) {
         Copy-SafeFile -Src (Join-Path $scriptDir "hooks\$h") -Dst (Join-Path $projHooksDir $h)
     }
 
+    # Project-scope skills: everything under skills\project\ (installed by default)
+    $projSkillsRoot = Join-Path $scriptDir 'skills\project'
+    if (Test-Path $projSkillsRoot) {
+        foreach ($skillDir in Get-ChildItem -Directory -Path $projSkillsRoot) {
+            $skillName = $skillDir.Name
+            Copy-SafeFile `
+                -Src (Join-Path $skillDir.FullName 'SKILL.md') `
+                -Dst (Join-Path $projectClaude "skills\$skillName\SKILL.md")
+        }
+    }
+
     Write-OrSidecarSettings `
         -Src (Join-Path $scriptDir 'settings\project.json') `
         -Dst (Join-Path $projectClaude 'settings.json') `
@@ -149,6 +166,7 @@ if ($doProject) {
     Log ''
     Log "NEXT: add this line to your project's CLAUDE.md so every session reads the workflow:"
     Log '      > **Required reading:** the `ai-workflow` skill (installed at `~/.claude/skills/ai-workflow/SKILL.md`).'
+    Log '      Project-scope skills (e.g. supabase-migration-merge) live at <project>/.claude/skills/.'
 }
 
 # -------- done --------

@@ -46,8 +46,12 @@ agent-workflow-training/
 │   └── deny-supabase-writes.js block ad-hoc mutating SQL via Supabase MCP execute_sql
 │
 ├── skills/
-│   └── ai-workflow/
-│       └── SKILL.md            the dev iteration loop
+│   ├── user/                   installed to ~/.claude/skills/ (cross-project)
+│   │   └── ai-workflow/
+│   │       └── SKILL.md        the dev iteration loop
+│   └── project/                installed to <project>/.claude/skills/ (per-repo)
+│       └── supabase-migration-merge/
+│           └── SKILL.md        coordinate multi-branch migration merges via gh
 │
 └── mcp-templates/              per-MCP setup recipes
     ├── README.md
@@ -103,21 +107,23 @@ cd agent-workflow-training
 **User scope** (`~/.claude/`):
 - `hooks/deny-env-access.js`
 - `hooks/deny-supabase-writes.js`
-- `hooks/deny-supabase-migration.js`
-- `skills/ai-workflow/SKILL.md`
+- Everything under `skills/user/` → `~/.claude/skills/<skill-name>/SKILL.md` (currently: `ai-workflow`)
 - `settings.json` *(if missing — otherwise `settings.json.agent-workflow-training` sidecar)*
 
 **Project scope** (`<project>/.claude/`):
-- Same three hooks (duplicated into the project so the protections travel with the repo)
+- Same hooks (duplicated into the project so the protections travel with the repo)
+- Everything under `skills/project/` → `<project>/.claude/skills/<skill-name>/SKILL.md` (currently: `supabase-migration-merge`)
 - `settings.json` *(or sidecar if existing)*
 
-### After install: wire `ai-workflow` into your project
+### After install: wire skills into your project
 
-Add one line near the top of your project's `CLAUDE.md`:
+Add this block near the top of your project's `CLAUDE.md`:
 
 ```markdown
 > **Required reading:** the `ai-workflow` skill (installed at `~/.claude/skills/ai-workflow/SKILL.md`).
 > Read it before any non-trivial task.
+>
+> **Project-scope skills:** see `.claude/skills/` for repo-specific skills installed by `agent-workflow-training` — currently `supabase-migration-merge` (invoke when 2+ branches touch `supabase/migrations/`).
 ```
 
 ---
@@ -131,7 +137,7 @@ Add one line near the top of your project's `CLAUDE.md`:
 | Read `.env.example` | Allowed | — |
 | Supabase MCP `SELECT * FROM ...` | Allowed | — |
 | Supabase MCP `execute_sql` with `INSERT/UPDATE/DELETE/DROP/...` | **Denied** | `deny-supabase-writes.js` |
-| Supabase MCP `apply_migration` | **Allowed** — this is the *intended* path for schema changes (versioned, replayable). The forthcoming `supabase-migration-merge` skill will help when concurrent migrations conflict. | — |
+| Supabase MCP `apply_migration` | **Allowed** — this is the *intended* path for schema changes (versioned, replayable). The `supabase-migration-merge` skill (installed at `<project>/.claude/skills/`) helps when concurrent migrations from multiple branches need to be reconciled. | — |
 | `git push --force origin main` | **Denied** | `permissions.deny` |
 | `git push` (normal) | Allowed | — |
 | `rm -rf /` or `rm -rf ~` | **Denied** | `permissions.deny` |
