@@ -8,6 +8,7 @@ Per-MCP recipes for wiring tools into a Claude Code project. **Do NOT commit rea
 |---|---|---|
 | [`supabase.md`](supabase.md) | Supabase MCP — DB schema queries, log inspection, migration drafting. Read-only via the framework's hook (writes go to humans). | per-project |
 | [`freedcamp.md`](freedcamp.md) | Freedcamp MCP — one MCP **per project** in your Freedcamp workspace. Tasks, comments, lists. | per-project, one server per Freedcamp project |
+| [`figma.md`](figma.md) | Figma MCP — read access to design files, frame export, component/token inspection. Read-mostly. | per-project |
 
 ## Where MCP config lives
 

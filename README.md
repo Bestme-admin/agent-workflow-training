@@ -164,6 +164,7 @@ The framework doesn't auto-configure your MCPs — that's project-specific and c
 
 - [Supabase](mcp-templates/supabase.md) — DB queries, schema inspection
 - [Freedcamp](mcp-templates/freedcamp.md) — one MCP per Freedcamp project
+- [Figma](mcp-templates/figma.md) — read access to design files, frame export, component/token inspection
 
 ### Updating the framework
 
@@ -350,6 +351,7 @@ Project-scope (`<project>/.claude/`):
 
 - [Supabase](mcp-templates/supabase.md) — запросы к БД, инспекция схемы
 - [Freedcamp](mcp-templates/freedcamp.md) — один MCP на каждый Freedcamp-проект
+- [Figma](mcp-templates/figma.md) — чтение дизайн-файлов, экспорт фреймов, инспекция компонентов/токенов
 
 ### Обновление фреймворка
 
