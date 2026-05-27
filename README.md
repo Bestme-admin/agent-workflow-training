@@ -180,13 +180,28 @@ git pull
 
 ### Contributing
 
-This is an internal-but-public framework. PRs welcome from BestMe team members. The minimal bar for a new rule:
+This is an internal-but-public framework. PRs welcome from BestMe team members.
+
+**The most valuable contribution is a new skill.** If you find yourself explaining the same multi-step process to Claude across different sessions — a release checklist, a database backfill pattern, a particular kind of refactor, an incident-response runbook — that's exactly when a `SKILL.md` should exist. The next person on the team (and every Claude session they run) gets your hard-won workflow as a first-class tool instead of re-deriving it.
+
+**Threshold to PR a skill:** you've walked the workflow three times. Two might be a coincidence; three is a pattern. Don't wait for it to feel "polished" — a rough SKILL.md that captures the real steps you actually took is more useful than a hypothetical perfect one.
+
+**New skill — the shape:**
+
+1. Drop a folder under `skills/user/<skill-name>/` (cross-project) or `skills/project/<skill-name>/` (per-repo) with a single `SKILL.md`.
+2. Frontmatter: `name` (kebab-case), `description` written so an agent reading it cold knows exactly *when to invoke* the skill. Lead with the trigger condition.
+3. Body: phases or numbered steps, hard rules, what "done" looks like, what the skill explicitly **won't** do.
+4. PR it. Anyone running the installer next pulls your skill in.
+
+See [`skills/user/ai-workflow/SKILL.md`](skills/user/ai-workflow/SKILL.md) and [`skills/project/supabase-migration-merge/SKILL.md`](skills/project/supabase-migration-merge/SKILL.md) as worked examples.
+
+**New deny rule or hook — the bar:**
 
 1. **Why it exists** — describe the incident, near-miss, or class of accident the rule prevents.
 2. **Test case** — what tool call should be denied, what tool call should still pass.
 3. **Scope** — user, project, or both. Document the choice.
 
-For a new MCP template, follow the structure in [`mcp-templates/README.md`](mcp-templates/README.md).
+**New MCP template** — follow the structure in [`mcp-templates/README.md`](mcp-templates/README.md). Don't add an MCP template for something the team doesn't actually use; "looks useful" is not a contribution criterion.
 
 ### License
 
@@ -367,13 +382,28 @@ git pull
 
 ### Вклад в развитие
 
-Это внутренний, но публичный фреймворк. PR-ы приветствуются от команды BestMe. Минимальный порог для нового правила:
+Это внутренний, но публичный фреймворк. PR-ы приветствуются от команды BestMe.
+
+**Самый ценный вклад — новый навык.** Если вы замечаете, что объясняете Claude один и тот же многошаговый процесс в разных сессиях — чеклист релиза, шаблон бэкфилла данных, конкретный вид рефакторинга, runbook реакции на инцидент — это ровно тот момент, когда должен появиться `SKILL.md`. Следующий человек в команде (и каждая его Claude-сессия) получит ваш выстраданный workflow как полноценный инструмент, а не будет выводить его заново.
+
+**Когда пора оформить навык в PR:** вы прошли этот процесс три раза. Два может быть совпадением, три — это паттерн. Не ждите, пока он будет «отполирован» — черновой SKILL.md, отражающий реально пройденные шаги, полезнее гипотетически идеального.
+
+**Новый навык — структура:**
+
+1. Положите папку в `skills/user/<имя-навыка>/` (общее для всех проектов) или `skills/project/<имя-навыка>/` (для конкретного репо) с одним `SKILL.md`.
+2. Frontmatter: `name` (kebab-case), `description`, написанное так, чтобы агент, читающий его «с холода», сразу понял *когда вызывать* этот навык. Начните с триггерного условия.
+3. Тело: фазы или нумерованные шаги, жёсткие правила, как выглядит «готово», что навык **не** делает.
+4. PR. Следующий, кто запустит установщик, получит ваш навык.
+
+См. [`skills/user/ai-workflow/SKILL.md`](skills/user/ai-workflow/SKILL.md) и [`skills/project/supabase-migration-merge/SKILL.md`](skills/project/supabase-migration-merge/SKILL.md) как рабочие примеры.
+
+**Новое deny-правило или хук — порог:**
 
 1. **Зачем оно существует** — опишите инцидент, потенциальную аварию или класс ошибок, который правило предотвращает.
 2. **Тест-кейс** — какой tool call должен быть запрещён, какой — пройти.
 3. **Область** — user, project или обе. Зафиксируйте выбор.
 
-Для нового MCP-шаблона следуйте структуре в [`mcp-templates/README.md`](mcp-templates/README.md).
+**Новый MCP-шаблон** — следуйте структуре в [`mcp-templates/README.md`](mcp-templates/README.md). Не добавляйте шаблон для MCP, который команда не использует; «выглядит полезно» — не критерий вклада.
 
 ### Лицензия
 
