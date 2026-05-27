@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "$comment": "agent-workflow-training :: PROJECT SCOPE. Installed to <project>/.claude/settings.json. Commit this file so every team member's checkout enforces the same rules. Extends user-scope settings; cannot weaken them.",
+
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Write(**/.env)",
+      "Write(**/.env.*)"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__supabase__execute_sql",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/deny-supabase-writes.js\""
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Edit|Write|NotebookEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/deny-env-access.js\""
+          }
+        ]
+      }
+    ]
+  }
+}

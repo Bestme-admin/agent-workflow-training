@@ -1,0 +1,23 @@
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Local install artifacts (this repo only ships templates; live installs live in ~/.claude or <project>/.claude)
+.claude/
+**/*.local.json
+
+# Node (if anyone runs hook tests locally)
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+*.log
+
+# Anything matching .env — defense-in-depth even though hooks should also catch it
+.env
+.env.*
+!.env.example

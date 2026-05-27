@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "$comment": "agent-workflow-training :: USER SCOPE. Installed to ~/.claude/settings.json. Applies to ALL Claude Code sessions on this machine. Project-scoped settings can extend but should not weaken these.",
+
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Write(**/.env)",
+      "Write(**/.env.*)",
+      "NotebookEdit(**/.env)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(rm -rf $HOME*)",
+      "Bash(sudo rm*)",
+      "Bash(git push --force origin main*)",
+      "Bash(git push --force origin master*)",
+      "Bash(git push -f origin main*)",
+      "Bash(git push -f origin master*)",
+      "Bash(git reset --hard origin/main*)",
+      "Bash(git reset --hard origin/master*)",
+      "Bash(git branch -D main*)",
+      "Bash(git branch -D master*)",
+      "Bash(git clean -fdx*)",
+      "Bash(npm publish*)",
+      "Bash(pnpm publish*)",
+      "Bash(gh repo delete*)",
+      "Bash(gh auth logout*)",
+      "PowerShell(Remove-Item -Recurse -Force /*)",
+      "PowerShell(Remove-Item -Recurse -Force ~*)"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|NotebookEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{USER_HOOKS}}/deny-env-access.js\""
+          }
+        ]
+      }
+    ]
+  }
+}
