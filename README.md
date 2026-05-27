@@ -50,7 +50,8 @@ agent-workflow-training/
 ├── hooks/                      cross-platform Node hooks
 │   ├── orient-session.js       SessionStart banner: tells the user WHY-DENIED.md exists
 │   ├── deny-env-access.js      block reads/writes/shell access to .env*
-│   └── deny-supabase-writes.js block ad-hoc mutating SQL via Supabase MCP execute_sql
+│   ├── deny-supabase-writes.js block ad-hoc mutating SQL via Supabase MCP execute_sql
+│   └── guard-security-configs.js   escalate (ask, not deny) edits to .claude/, IDE run configs, secret paths
 │
 ├── skills/
 │   ├── user/                   installed to ~/.claude/skills/ (cross-project)
@@ -146,6 +147,9 @@ Add this block near the top of your project's `CLAUDE.md`:
 | `git push --force origin main` | **Denied** | `permissions.deny` |
 | `git push` (normal) | Allowed | — |
 | `rm -rf /` or `rm -rf ~` | **Denied** | `permissions.deny` |
+| `env` / `printenv` / `echo $VAR` / `set` / PowerShell `Get-ChildItem env:*` | **Denied** | `permissions.deny` — env-var dumping is the indirect path to `.env` content |
+| Reads from `~/.ssh/`, `~/.aws/`, `~/.config/gh/`, `**/secrets/`, `**/credentials/` | **Denied** | `permissions.deny` (whole-directory credential stores) |
+| Edits to `.claude/settings.json` / `.claude/hooks/**` / `.idea/runConfigurations/**` / `.run/**` | **Escalated (asks for approval)** | `guard-security-configs.js` — legitimate sometimes, never silent |
 | Reading the codebase, editing files, running tests | Allowed | — |
 | Anything else risky | Approval prompt | (default Claude Code behavior — not pre-allowed) |
 
@@ -352,6 +356,9 @@ Project-scope (`<project>/.claude/`):
 | `git push --force origin main` | **Запрещено** | `permissions.deny` |
 | `git push` (обычный) | Разрешено | — |
 | `rm -rf /` или `rm -rf ~` | **Запрещено** | `permissions.deny` |
+| `env` / `printenv` / `echo $VAR` / `set` / PowerShell `Get-ChildItem env:*` | **Запрещено** | `permissions.deny` — дамп env vars = косвенный путь к содержимому `.env` |
+| Чтение `~/.ssh/`, `~/.aws/`, `~/.config/gh/`, `**/secrets/`, `**/credentials/` | **Запрещено** | `permissions.deny` (директории целиком с учётками) |
+| Правки `.claude/settings.json` / `.claude/hooks/**` / `.idea/runConfigurations/**` / `.run/**` | **Эскалация (запрос одобрения)** | `guard-security-configs.js` — иногда легитимно, но никогда молча |
 | Чтение кодовой базы, редактирование файлов, прогон тестов | Разрешено | — |
 | Что-либо ещё рискованное | Запрос на подтверждение | (стандартное поведение Claude Code — не одобрено заранее) |
 

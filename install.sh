@@ -122,7 +122,7 @@ if [[ $DO_USER == 1 ]]; then
   hdr "User scope (${USER_CLAUDE})"
 
   USER_HOOKS_DIR="${USER_CLAUDE}/hooks"
-  for h in deny-env-access.js deny-supabase-writes.js orient-session.js; do
+  for h in deny-env-access.js deny-supabase-writes.js orient-session.js guard-security-configs.js; do
     safe_copy_file "${SCRIPT_DIR}/hooks/${h}" "${USER_HOOKS_DIR}/${h}"
   done
 
@@ -149,7 +149,7 @@ if [[ $DO_PROJECT == 1 ]]; then
   hdr "Project scope (${PROJECT_CLAUDE})"
 
   PROJ_HOOKS_DIR="${PROJECT_CLAUDE}/hooks"
-  for h in deny-env-access.js deny-supabase-writes.js; do
+  for h in deny-env-access.js deny-supabase-writes.js guard-security-configs.js; do
     safe_copy_file "${SCRIPT_DIR}/hooks/${h}" "${PROJ_HOOKS_DIR}/${h}"
   done
 

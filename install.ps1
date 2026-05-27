@@ -115,7 +115,7 @@ if ($doUser) {
     Hdr "User scope ($userClaude)"
 
     $userHooksDir = Join-Path $userClaude 'hooks'
-    foreach ($h in @('deny-env-access.js', 'deny-supabase-writes.js', 'orient-session.js')) {
+    foreach ($h in @('deny-env-access.js', 'deny-supabase-writes.js', 'orient-session.js', 'guard-security-configs.js')) {
         Copy-SafeFile -Src (Join-Path $scriptDir "hooks\$h") -Dst (Join-Path $userHooksDir $h)
     }
 
@@ -148,7 +148,7 @@ if ($doProject) {
     Hdr "Project scope ($projectClaude)"
 
     $projHooksDir = Join-Path $projectClaude 'hooks'
-    foreach ($h in @('deny-env-access.js', 'deny-supabase-writes.js')) {
+    foreach ($h in @('deny-env-access.js', 'deny-supabase-writes.js', 'guard-security-configs.js')) {
         Copy-SafeFile -Src (Join-Path $scriptDir "hooks\$h") -Dst (Join-Path $projHooksDir $h)
     }
 

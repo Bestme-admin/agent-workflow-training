@@ -6,6 +6,8 @@
     "deny": [
       "Read(**/.env)",
       "Read(**/.env.*)",
+      "Read(./secrets/**)",
+      "Read(./credentials/**)",
       "Edit(**/.env)",
       "Edit(**/.env.*)",
       "Write(**/.env)",
@@ -70,6 +72,15 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/deny-env-access.js\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-security-configs.js\""
           }
         ]
       }

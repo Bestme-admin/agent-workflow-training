@@ -10,12 +10,17 @@
 
 ### How deny errors get surfaced
 
-When Claude Code refuses a tool call, you see one of two message shapes in your terminal:
+When Claude Code refuses a tool call, you see one of three message shapes in your terminal:
 
-1. **`Tool use X denied by permissions.deny pattern: <pattern>`** — a `permissions.deny` glob in `settings.json` matched. Fast, cheap, fires before any hook. The pattern itself is the only context — look it up below.
-2. **A custom message from a hook** (e.g. `"Blocked: shell command touches a .env file. Secrets stay out of agent context..."`) — a PreToolUse hook ran and returned a structured deny. These already explain themselves inline; you usually don't need this doc for them.
+1. **`Tool use X denied by permissions.deny pattern: <pattern>`** — a `permissions.deny` glob in `settings.json` matched. Fast, cheap, fires before any hook. The pattern itself is the only context — look it up below. **No way to override** within the session; if it's wrong, edit the rule.
+2. **A custom message from a hook with `decision: deny`** (e.g. `"Blocked: shell command touches a .env file..."`) — a PreToolUse hook ran and returned a structured deny. These explain themselves inline; usually don't need this doc.
+3. **A custom message from a hook with `decision: ask`** (e.g. `"Security-sensitive config — manual approval required..."`) — the **escalation** path. Hook flagged the action as one that *might* be legitimate but must consciously pass through human judgment. You can approve in the moment; you can also decide it's bogus and decline.
 
-This doc covers the `permissions.deny` patterns because their on-screen text is terse.
+`ask` vs `deny` is deliberate:
+- **Deny** = "this never has a legitimate agent-driven path; if you want it, do it yourself outside Claude Code."
+- **Ask** = "this sometimes makes sense, but should never happen without you actively saying yes."
+
+This doc covers the `permissions.deny` patterns (which produce terse messages) and the `ask`-class hook escalations (so you know what they protect).
 
 ---
 
@@ -32,11 +37,26 @@ This doc covers the `permissions.deny` patterns because their on-screen text is 
 
 ---
 
+### Environment-variable dumping (the indirect path to secrets)
+
+Many `.env` values get loaded into the shell as env vars. Blocking only the `.env` file leaves the door open: an agent can call `env` / `printenv` / `echo $SECRET_KEY` and get the same content.
+
+| Pattern (example) | Why blocked | What to do instead |
+|---|---|---|
+| `Bash(env)`, `Bash(env *)`, `Bash(printenv)`, `Bash(printenv *)` | Lists *every* env var including any secrets the user has exported. | If you need to check *one* specific value exists, ask the user to confirm it. Don't dump the table. |
+| `Bash(echo $*)`, `Bash(echo ${*})`, `Bash(echo "$*")` | `echo $SECRET_KEY` is the textbook one-line exfiltration. | If the agent needs to *use* an env var in a script it's about to run, the env var is already available to that subprocess — it doesn't need to read it first. |
+| `Bash(set)`, `Bash(declare -p*)`, `Bash(export)`, `Bash(export -p)` | All dump shell state including env. | Same as above. |
+| `PowerShell(Get-ChildItem env:*)`, `PowerShell(gci env:*)`, `PowerShell(ls env:*)`, `PowerShell(dir env:*)`, `PowerShell(echo $env:*)`, `PowerShell(Write-Host $env:*)`, `PowerShell([System.Environment]::GetEnvironmentVariables*)` | PowerShell equivalents — all surface env table or specific vars. | Same as Bash. |
+
+---
+
 ### Private-key file access
 
 | Pattern (example) | Why blocked | What to do instead |
 |---|---|---|
 | `Read(**/*.pem)`, `Read(**/*.key)`, `Read(**/id_rsa)`, `Read(**/id_ed25519)` | Private cryptographic material must not enter agent context — same logic as `.env` plus the keys are typically irrevocable in the moment. | If the agent needs to know *that* a key exists, run `ls -la ~/.ssh/` yourself. If the agent needs key content, that's almost never the right answer — push back. |
+| `Read(~/.ssh/**)`, `Read(~/.aws/**)`, `Read(~/.config/gh/**)` | Whole-directory reads of credential stores. Even `known_hosts` exposes who you connect to. | If the agent needs a specific config detail, paste the relevant line. Don't let it slurp the directory. |
+| `Read(**/secrets/**)`, `Read(**/credentials/**)` | Project-level secret stores by convention name. | Reference values by name in chat, share the specific value if needed. |
 | `Bash(cat *.pem)`, `Bash(cat **/id_rsa)`, etc. | Shell reads of the same files. | Same as above. |
 
 ---
@@ -54,6 +74,21 @@ This doc covers the `permissions.deny` patterns because their on-screen text is 
 | `Bash(gh repo delete*)` | Self-evident. | Don't. |
 | `Bash(gh auth logout*)` | Wipes auth credentials from the gh keyring — affects future sessions you may not be tracking, and unrelated projects on the same machine. | If you need to switch active account, use `gh auth switch -u <user>` (reversible). |
 | `PowerShell(Remove-Item -Recurse -Force /*)`, `PowerShell(Remove-Item -Recurse -Force ~*)` | PowerShell equivalent of `rm -rf /` and `rm -rf ~`. | Same as above. |
+
+---
+
+### Escalation: edits that require your conscious approval (`ask`, not `deny`)
+
+Some edits aren't outright forbidden — they have legitimate reasons but should never happen silently mid-task. The `guard-security-configs.js` hook intercepts these and asks for human approval each time.
+
+| Target | Why this escalates | When to approve |
+|---|---|---|
+| `.claude/settings.json`, `.claude/settings.local.json` | Editing the framework's own config — the agent could weaken its own guardrails. | Approve **only** if the explicit task is "update Claude Code settings." Never as a side effect of another task. |
+| `.claude/hooks/**` | Editing the framework's enforcement scripts. Same risk shape. | Approve only if you're consciously modifying a hook (which usually means PRing a change back to `agent-workflow-training`). |
+| `.idea/runConfigurations/**` (JetBrains), `.run/**` | IDE run configurations are arbitrary-code-on-IDE-startup vectors. Malicious or careless edits run the next time you open the project. | Approve only if you actually wanted a run config changed. Read the diff carefully. |
+| `.env`, `secrets/`, `credentials/`, `.ssh/`, `.aws/` | Defense-in-depth — most paths here are already hard-denied, but the escalation hook is a backstop in case a hard rule missed an edge case. | Almost never. If you see this prompt, look at what the agent's trying to do and probably refuse. |
+
+The hook returns `permissionDecision: "ask"`, which means the deny isn't permanent — Claude Code shows you the action and the reason, and you decide. The decision applies to *that one tool call*; the next attempt asks again.
 
 ---
 
@@ -82,12 +117,17 @@ The framework's principle: rules that exist exist because someone learned them t
 
 ### Как видны deny-ошибки
 
-Когда Claude Code отказывает в tool call'е, в терминале вы увидите одну из двух форм сообщения:
+Когда Claude Code отказывает в tool call'е, в терминале вы увидите одну из трёх форм сообщения:
 
-1. **`Tool use X denied by permissions.deny pattern: <pattern>`** — сработал glob из `permissions.deny` в `settings.json`. Быстро, дёшево, выполняется до любого хука. Сам шаблон — единственный контекст; ищите его ниже.
-2. **Кастомное сообщение от хука** (например, `"Blocked: shell command touches a .env file. Secrets stay out of agent context..."`) — отработал PreToolUse-хук и вернул структурированный отказ. Эти сообщения объясняют себя inline; этот документ для них обычно не нужен.
+1. **`Tool use X denied by permissions.deny pattern: <pattern>`** — сработал glob из `permissions.deny` в `settings.json`. Быстро, дёшево, выполняется до любого хука. Сам шаблон — единственный контекст; ищите его ниже. **Переопределить в сессии нельзя**; если правило неверно — правьте само правило.
+2. **Кастомное сообщение от хука с `decision: deny`** (например, `"Blocked: shell command touches a .env file..."`) — отработал PreToolUse-хук и вернул структурированный отказ. Эти сообщения объясняют себя inline; этот документ для них обычно не нужен.
+3. **Кастомное сообщение от хука с `decision: ask`** (например, `"Security-sensitive config — manual approval required..."`) — путь **эскалации**. Хук пометил действие как такое, которое *может* быть легитимным, но должно сознательно пройти через человеческое решение. Можно одобрить на месте; можно решить, что это лишнее, и отказать.
 
-Этот документ описывает шаблоны `permissions.deny`, потому что их экранный текст краток.
+`ask` vs `deny` — намеренное различие:
+- **Deny** = «у этого действия никогда нет легитимного пути через агента; если нужно — делайте сами вне Claude Code».
+- **Ask** = «иногда это имеет смысл, но не должно происходить без вашего активного `да`».
+
+Этот документ описывает шаблоны `permissions.deny` (которые дают краткие сообщения) и эскалации класса `ask` (чтобы вы знали, что они защищают).
 
 ---
 
@@ -104,11 +144,26 @@ The framework's principle: rules that exist exist because someone learned them t
 
 ---
 
+### Дамп переменных окружения (косвенный путь к секретам)
+
+Многие значения `.env` загружаются в shell как env vars. Блокировать только `.env`-файл недостаточно: агент может вызвать `env` / `printenv` / `echo $SECRET_KEY` и получить тот же контент.
+
+| Шаблон (пример) | Почему запрещено | Что делать вместо |
+|---|---|---|
+| `Bash(env)`, `Bash(env *)`, `Bash(printenv)`, `Bash(printenv *)` | Печатают *все* env vars, включая любые секреты, экспортированные пользователем. | Если нужно проверить наличие *одного* значения — попросите пользователя подтвердить. Не дампите таблицу. |
+| `Bash(echo $*)`, `Bash(echo ${*})`, `Bash(echo "$*")` | `echo $SECRET_KEY` — однострочный учебник по эксфильтрации. | Если агенту нужно *использовать* env var в скрипте, который он запустит — этот var уже доступен подпроцессу, читать его перед этим не нужно. |
+| `Bash(set)`, `Bash(declare -p*)`, `Bash(export)`, `Bash(export -p)` | Все дампят shell-state, включая env. | Аналогично выше. |
+| `PowerShell(Get-ChildItem env:*)`, `PowerShell(gci env:*)`, `PowerShell(ls env:*)`, `PowerShell(dir env:*)`, `PowerShell(echo $env:*)`, `PowerShell(Write-Host $env:*)`, `PowerShell([System.Environment]::GetEnvironmentVariables*)` | PowerShell-эквиваленты — выводят env-таблицу или конкретные переменные. | Аналогично Bash. |
+
+---
+
 ### Доступ к приватным ключам
 
 | Шаблон (пример) | Почему запрещено | Что делать вместо |
 |---|---|---|
 | `Read(**/*.pem)`, `Read(**/*.key)`, `Read(**/id_rsa)`, `Read(**/id_ed25519)` | Приватный криптоматериал не должен попадать в контекст агента — та же логика, что и для `.env`, плюс ключи обычно нельзя «отозвать» оперативно. | Если агенту нужно знать, *что* ключ существует — запустите `ls -la ~/.ssh/` сами. Если агенту нужен контент ключа — почти всегда это неправильный путь, отказывайте. |
+| `Read(~/.ssh/**)`, `Read(~/.aws/**)`, `Read(~/.config/gh/**)` | Чтение целых директорий с учётками. Даже `known_hosts` показывает, к кому вы подключаетесь. | Если агенту нужна конкретная деталь конфига — вставьте нужную строку сами. Не давайте «съесть» директорию. |
+| `Read(**/secrets/**)`, `Read(**/credentials/**)` | Каталоги секретов по конвенциональному имени. | Ссылайтесь на значения по имени в чате, передавайте конкретное значение, если нужно. |
 | `Bash(cat *.pem)`, `Bash(cat **/id_rsa)` и т. п. | Shell-чтения тех же файлов. | Аналогично выше. |
 
 ---
@@ -126,6 +181,21 @@ The framework's principle: rules that exist exist because someone learned them t
 | `Bash(gh repo delete*)` | Самоочевидно. | Не надо. |
 | `Bash(gh auth logout*)` | Стирает auth-учётки из gh keyring — затрагивает будущие сессии, которые вы можете не отслеживать, и несвязанные проекты на той же машине. | Если нужно переключить активный аккаунт — используйте `gh auth switch -u <user>` (обратимо). |
 | `PowerShell(Remove-Item -Recurse -Force /*)`, `PowerShell(Remove-Item -Recurse -Force ~*)` | PowerShell-эквивалент `rm -rf /` и `rm -rf ~`. | Аналогично выше. |
+
+---
+
+### Эскалация: правки, требующие вашего сознательного одобрения (`ask`, не `deny`)
+
+Некоторые правки не запрещены полностью — для них есть легитимные причины, но они не должны происходить молча в середине задачи. Хук `guard-security-configs.js` перехватывает их и каждый раз запрашивает одобрение человека.
+
+| Цель | Почему эскалируется | Когда одобрять |
+|---|---|---|
+| `.claude/settings.json`, `.claude/settings.local.json` | Редактирование собственной конфигурации фреймворка — агент мог бы ослабить свои же ограничения. | Одобряйте **только** если явная задача — «обновить настройки Claude Code». Никогда как побочный эффект другой задачи. |
+| `.claude/hooks/**` | Редактирование собственных enforcement-скриптов фреймворка. Та же форма риска. | Одобряйте, только если вы сознательно модифицируете хук (что обычно значит — PR в `agent-workflow-training`). |
+| `.idea/runConfigurations/**` (JetBrains), `.run/**` | IDE run-configurations — вектор arbitrary-code-on-IDE-startup. Вредоносная или небрежная правка запустится в следующий раз при открытии проекта. | Одобряйте, только если вы действительно хотели изменить run-конфиг. Внимательно читайте diff. |
+| `.env`, `secrets/`, `credentials/`, `.ssh/`, `.aws/` | Defense-in-depth — большинство путей здесь уже hard-denied, но хук-эскалация служит подстраховкой на случай, если жёсткое правило что-то пропустило. | Почти никогда. Если увидели этот запрос — посмотрите, что агент пытается сделать, и скорее всего откажите. |
+
+Хук возвращает `permissionDecision: "ask"`, что означает, что отказ не постоянный — Claude Code показывает действие и причину, вы решаете. Решение применяется к *одному* tool call'у; следующая попытка снова спросит.
 
 ---
 

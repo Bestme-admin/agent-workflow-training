@@ -10,6 +10,11 @@
       "Read(**/*.key)",
       "Read(**/id_rsa)",
       "Read(**/id_ed25519)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Read(**/secrets/**)",
+      "Read(**/credentials/**)",
       "Edit(**/.env)",
       "Edit(**/.env.*)",
       "Write(**/.env)",
@@ -63,6 +68,19 @@
       "Bash(cat **/id_rsa)",
       "Bash(cat **/id_ed25519)",
 
+      "Bash(env)",
+      "Bash(env *)",
+      "Bash(printenv)",
+      "Bash(printenv *)",
+      "Bash(echo $*)",
+      "Bash(echo ${*})",
+      "Bash(echo \"$*\")",
+      "Bash(echo \"${*}\")",
+      "Bash(set)",
+      "Bash(declare -p*)",
+      "Bash(export)",
+      "Bash(export -p)",
+
       "PowerShell(Get-Content .env*)",
       "PowerShell(Get-Content ./.env*)",
       "PowerShell(Get-Content **/.env*)",
@@ -86,6 +104,17 @@
       "PowerShell(Get-Content **/*.pem)",
       "PowerShell(Get-Content *.key)",
       "PowerShell(Get-Content **/*.key)",
+
+      "PowerShell(Get-ChildItem env:*)",
+      "PowerShell(gci env:*)",
+      "PowerShell(ls env:*)",
+      "PowerShell(dir env:*)",
+      "PowerShell(Get-ChildItem -Path env:*)",
+      "PowerShell(Get-ChildItem -Path Env:*)",
+      "PowerShell(echo $env:*)",
+      "PowerShell(Write-Host $env:*)",
+      "PowerShell(Write-Output $env:*)",
+      "PowerShell([System.Environment]::GetEnvironmentVariables*)",
 
       "Bash(rm -rf /*)",
       "Bash(rm -rf ~*)",
@@ -127,6 +156,15 @@
           {
             "type": "command",
             "command": "node \"{{USER_HOOKS}}/deny-env-access.js\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"{{USER_HOOKS}}/guard-security-configs.js\""
           }
         ]
       }
