@@ -164,7 +164,6 @@ The framework doesn't auto-configure your MCPs — that's project-specific and c
 
 - [Supabase](mcp-templates/supabase.md) — DB queries, schema inspection
 - [Freedcamp](mcp-templates/freedcamp.md) — one MCP per Freedcamp project
-- [Google](mcp-templates/google.md) — Gmail, Calendar, Drive (OAuth, user-scope)
 - [ClickUp](mcp-templates/clickup.md) — alternative PM tool
 
 ### Updating the framework
@@ -352,7 +351,6 @@ Project-scope (`<project>/.claude/`):
 
 - [Supabase](mcp-templates/supabase.md) — запросы к БД, инспекция схемы
 - [Freedcamp](mcp-templates/freedcamp.md) — один MCP на каждый Freedcamp-проект
-- [Google](mcp-templates/google.md) — Gmail, Calendar, Drive (OAuth, user-scope)
 - [ClickUp](mcp-templates/clickup.md) — альтернативный PM-инструмент
 
 ### Обновление фреймворка
