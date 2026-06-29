@@ -85,35 +85,50 @@ safe_copy_file() {
   log "Wrote:    $dst"
 }
 
-write_or_sidecar_settings() {
-  # write_or_sidecar_settings <src> <dst> [substitutions...]
-  # If $dst doesn't exist: write. If it does: write to $dst.agent-workflow-training instead.
+merge_settings() {
+  # merge_settings <src> <dst> [substitutions...]
+  # Deep-merges the framework overlay into $dst (preserving user keys) via
+  # lib/merge-settings.js. If $dst is absent, the overlay is written as-is.
+  # Idempotent (deny=union, hooks appended only if missing). Backs up + validates.
   local src="$1" dst="$2"
   shift 2
-  local tmp="$(mktemp)"
+  local tmp; tmp="$(mktemp)"
   cp "$src" "$tmp"
 
   # Apply substitutions (e.g., USER_HOOKS=/abs/path)
   for kv in "$@"; do
     local key="${kv%%=*}" val="${kv#*=}"
-    # Escape forward slashes in val for sed
     local val_esc
     val_esc=$(printf '%s' "$val" | sed 's/[\/&]/\\&/g')
     sed -i.bak "s/{{${key}}}/${val_esc}/g" "$tmp" && rm -f "$tmp.bak"
   done
 
-  if [[ -f "$dst" && "$FORCE" != "1" ]]; then
-    local sidecar="${dst}.agent-workflow-training"
-    run "mkdir -p \"$(dirname "$dst")\""
-    run "cp \"$tmp\" \"$sidecar\""
-    log "Existing settings.json detected — wrote sidecar: $sidecar"
-    log "  Merge manually: open both files, copy the permissions.deny entries"
-    log "  and hooks.PreToolUse entries from the sidecar into your settings.json."
-  else
-    run "mkdir -p \"$(dirname "$dst")\""
-    run "cp \"$tmp\" \"$dst\""
-    log "Wrote:    $dst"
+  local base="/dev/null"
+  [[ -f "$dst" ]] && base="$dst"
+
+  if [[ "$DRY" == "1" ]]; then
+    log "[dry] merge ${src##*/} -> $dst (base: $([ "$base" = /dev/null ] && echo 'new file' || echo 'existing, preserved'))"
+    rm -f "$tmp"; return
   fi
+
+  # Produce merged result to a temp file; validate before swapping in.
+  local merged; merged="$(mktemp)"
+  if ! node "${SCRIPT_DIR}/lib/merge-settings.js" "$base" "$tmp" > "$merged" 2>/tmp/merge-settings.err; then
+    warn "Merge failed (left $dst untouched). Error:"; sed 's/^/    /' /tmp/merge-settings.err >&2
+    rm -f "$tmp" "$merged"; return 1
+  fi
+  if ! node -e 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))' "$merged" 2>/dev/null; then
+    die "Merged settings is not valid JSON — aborting, $dst left untouched."
+  fi
+
+  mkdir -p "$(dirname "$dst")"
+  if [[ -f "$dst" ]]; then
+    local bak="${dst}.bak-$(date +%Y%m%d%H%M%S)"
+    cp "$dst" "$bak"
+    log "Backed up: $bak"
+  fi
+  mv "$merged" "$dst"
+  log "Merged:   $dst (deny rules + hooks active; existing keys preserved)"
   rm -f "$tmp"
 }
 
@@ -138,7 +153,7 @@ if [[ $DO_USER == 1 ]]; then
     done
   fi
 
-  write_or_sidecar_settings \
+  merge_settings \
     "${SCRIPT_DIR}/settings/user.json" \
     "${USER_CLAUDE}/settings.json" \
     "USER_HOOKS=${USER_HOOKS_DIR}"
@@ -162,7 +177,7 @@ if [[ $DO_PROJECT == 1 ]]; then
     done
   fi
 
-  write_or_sidecar_settings \
+  merge_settings \
     "${SCRIPT_DIR}/settings/project.json" \
     "${PROJECT_CLAUDE}/settings.json"
 
